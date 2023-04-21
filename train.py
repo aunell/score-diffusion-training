@@ -83,14 +83,14 @@ if not os.path.exists(pairwise_dist_path):
 
 config.data.image_size = [next(iter(dataloader))[config.training.X_train].shape[2], next(iter(dataloader))[config.training.X_train].shape[3]]
 print('Image Dimension: ' + str(config.data.image_size) + '\n')
-config.model.sigma_begin = np.loadtxt(pairwise_dist_path)
+config.model.sigma_begin = 90 #np.loadtxt(pairwise_dist_path)
 
 if isinstance(config.model.sigma_rate, str):
     config.model.sigma_rate = globals()[config.model.sigma_rate](dataset, config)
 
 if not config.model.sigma_end:
       config.model.sigma_end = config.model.sigma_begin * config.model.sigma_rate ** (config.model.num_classes - 1)
-
+print('line 93')
 # Get a model
 if config.model.depth == 'large':
     diffuser = NCSNv2Deepest(config).cuda()

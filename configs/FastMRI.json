@@ -13,7 +13,7 @@
     {
         "dataloader": "MCFullFastMRI",
         "file": "FastMRI_bas",
-        "ksp_path": "/csiNAS/mridata/fastmri_brain/brain_multicoil_train/multicoil_train/*T2*.h5",
+        "ksp_path": "/data/vision/polina/users/nmsingh/data/fastmri-data/train/singlecoil_train/",
         "map_path": "/csiNAS/mridata/fastmri_brain/multicoil_train_espiritWc0_mvue_ALL/",
         "train_size": 10000,
         "normalization": 0.99,

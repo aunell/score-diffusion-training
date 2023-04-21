@@ -3,12 +3,34 @@ from torch.utils.data import Dataset
 import numpy as np
 import sigpy as sp
 
+def listfile(path):
+    h5_paths=[]
+    for dirpath,_,filenames in os.walk(path):
+        for f in filenames:
+            self.h5_paths.append(os.path.abspath(os.path.join(dirpath, f)))
+    self.archives = [h5py.File(h5_path, "r") for h5_path in self.h5_paths]
+    self.archivesFinal = []
+    for files in self.archives:
+        allSlices = torch.from_numpy(files['kspace'][:])
+        for slicee in range(allSlices.size()[0]):
+            #**** single channel, normalized
+            temp = allSlices[slicee, :, :]
+            tempNorm=normalize_0_to_1(temp)
+            self.archivesFinal.append(tempNorm)
+            torchvision.utils.save_image(tempNorm, "/data/vision/polina/users/aunell/mri-langevin/csgm-mri-langevin-1/ncsnv2/reconDL.jpg", nrow=int(temp.shape[0] ** 0.5))
+            
+
 class MCFullFastMRI(Dataset):
     def __init__(self, config):
         self.num_slices       = 5
         self.center_slice     = 2
         self.ACS_size         = 24
-        self.ksp_files        = glob.glob(config.data.ksp_path)
+        # self.ksp_files        = glob.glob(config.data.ksp_path+'*.h5') 
+        self.ksp_files=[]
+        for dirpath,_,filenames in os.walk(config.data.ksp_path):
+            for f in filenames:
+                self.ksp_files.append(os.path.abspath(os.path.join(dirpath, f)))
+        print("KSP Size: " + str(len(self.ksp_files)))
         # self.ksp_files.remove('/csiNAS/mridata/fastmri_brain/brain_multicoil_train/multicoil_train/file_brain_AXT2_210_2100070.h5')
         if not config.data.train_size:
             config.data.train_size = len(self.ksp_files) * self.num_slices
@@ -32,12 +54,15 @@ class MCFullFastMRI(Dataset):
         # Load MRI samples and maps
         with h5py.File(self.ksp_files[sample_idx], 'r') as contents:
             # Get k-space for specific slice
-            ksp = np.asarray(contents['kspace'][slice_idx]) # shape = [C,H,W]
+            ksp = np.asarray(contents['kspace'][slice_idx])
+            ksp=ksp.reshape((2,ksp.shape[0]//2, ksp.shape[1])) # shape = [C,H,W]
+            print('KSP shape', ksp.shape) #640x368
             
         map_file = self.maps_dir + os.path.basename(self.ksp_files[sample_idx])
-        with h5py.File(map_file, 'r') as contents:
-            # Get sensitivity maps for specific slice
-            s_maps = np.asarray(contents['s_maps'][slice_idx])#was map_idx
+        # with h5py.File(map_file, 'r') as contents:
+        #     # Get sensitivity maps for specific slice
+        #     s_maps = np.asarray(contents['s_maps'][slice_idx])#was map_idx
+        s_maps=np.full(ksp.shape, 1)
          
         gt_img = self.adjoint_fs(ksp, s_maps) #shape [H,W]
 

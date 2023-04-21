@@ -2,7 +2,7 @@
 data: !!python/object:argparse.Namespace
   dataloader: MCFullFastMRI
   file: FastMRI_bas
-  ksp_path: /csiNAS/mridata/fastmri_brain/brain_multicoil_train/multicoil_train/*T2*.h5
+  ksp_path: /data/vision/polina/users/nmsingh/data/fastmri-data/train/singlecoil_train/
   map_path: /csiNAS/mridata/fastmri_brain/multicoil_train_espiritWc0_mvue_ALL/
   noise_std: 0.01
   normalization: 0.99
