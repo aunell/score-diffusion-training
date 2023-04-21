@@ -42,5 +42,8 @@
         "snr_range": [1000],
         "channels": 10,
         "steps_each": 4
-    }
+    },
+
+    "optim":
+    {}
 }

@@ -3,7 +3,7 @@
 
 import numpy as np
 import torch, sys, os, json, argparse
-from dotmap import DotMap
+# from dotmap import DotMap
 sys.path.append('.')
 
 # Args
@@ -24,8 +24,9 @@ from ncsnv2.losses        import get_optimizer
 
 from parameters import *
 from losses     import *
-
-from loaders          import *
+from parse import *
+from dataloaders import *
+# from loaders          import *
 from torch.utils.data import DataLoader
 
 # Always !!!
@@ -34,7 +35,8 @@ torch.backends.cudnn.allow_tf32       = True
 torch.backends.cudnn.benchmark        = True
 
 # Model config
-config = DotMap(json.load(open(parser.parse_args().config_path)))
+# config = DotMap(json.load(open(parser.parse_args().config_path)))
+args, config = parse_args_and_config()
 
 # GPU
 os.environ["CUDA_DEVICE_ORDER"]    = "PCI_BUS_ID";
