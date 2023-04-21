@@ -1,0 +1,46 @@
+{
+    "model":
+    {
+        "loss": "anneal_dsm_score_estimation",
+        "depth": "large",
+        "gpu": 2,
+        "ngf": 128,
+        "num_classes": 2311,
+        "sigma_rate": 0.99548
+    },
+    
+    "data":
+    {
+        "dataloader": "MCFullFastMRI",
+        "file": "FastMRI_bas",
+        "ksp_path": "/csiNAS/mridata/fastmri_brain/brain_multicoil_train/multicoil_train/*T2*.h5",
+        "map_path": "/csiNAS/mridata/fastmri_brain/multicoil_train_espiritWc0_mvue_ALL/",
+        "train_size": 10000,
+        "normalization": 0.99,
+        "noise_std": 0.01
+    },
+    
+    "training":
+    {
+        "batch_size": 4,
+        "n_epochs": 600,
+        "X_train": "X"
+    },
+    
+    "sampling":
+    {
+        "forward_class": "BrainForwardFastMRI",
+        "sampling_file": "sample0_R=5",
+        "sampling_path": "/home/asad/Old/mri-score/data/FastMRI/",
+        "target_model": "/home/asad/mri-score-diffusion/models/FastMRI_bas_MCFullFastMRI/sigma_begin232_sigma_end0.0066_num_classes2311.0_sigma_rate0.9955_epochs600.0/epoch250_final_model.pt",
+        "noise_boost": 1,
+        "dc_boost": 5,
+        "sigma_offset": 800,
+        "step_size": 9e-6,
+        "prior_sampling": 0,
+        "oracle_shape": [384, 384],
+        "snr_range": [1000],
+        "channels": 10,
+        "steps_each": 4
+    }
+}
