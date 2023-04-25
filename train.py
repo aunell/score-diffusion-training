@@ -3,12 +3,16 @@
 
 import numpy as np
 import torch, sys, os, json, argparse
-# from dotmap import DotMap
+from dotmap import DotMap
 sys.path.append('.')
 
 # Args
 parser = argparse.ArgumentParser()
-parser.add_argument('--config_path', type=str)
+# parser.add_argument('--config_path', type=str)
+parser.add_argument('--config', type=str, required=True,  help='Path to the config file')
+parser.add_argument('--doc', type=str, required=True, help='A string for documentation purpose. '
+                                                               'Will be the name of the log folder.')
+parser.add_argument('--exp', type=str, default='exp', help='Path for saving running related data.')
 
 from tqdm import tqdm as tqdm_base
 def tqdm(*args, **kwargs):
@@ -34,9 +38,51 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32       = True
 torch.backends.cudnn.benchmark        = True
 
+args = parser.parse_args()
+args.log_path = os.path.join(args.exp, 'logs', args.doc)
+
+# parse config file
+with open(args.config, 'r') as f:
+    config = yaml.safe_load(f) 
+new_config = dict2namespace(config)
+
+tb_path = os.path.join(args.exp, 'tensorboard', args.doc)
+
+if os.path.exists(args.log_path):
+    overwrite = False
+    response = input("Folder already exists. Overwrite? (Y/N)")
+    if response.upper() == 'Y':
+        overwrite = True
+
+    if overwrite:
+        shutil.rmtree(args.log_path)
+        shutil.rmtree(tb_path)
+        os.makedirs(args.log_path)
+        if os.path.exists(tb_path):
+            shutil.rmtree(tb_path)
+    else:
+        print("Folder exists. Program halted.")
+        sys.exit(0)
+else:
+    os.makedirs(args.log_path)
+
+with open(os.path.join(args.log_path, 'config.json'), 'w') as f:
+    yaml.dump(new_config, f, default_flow_style=False)
+
 # Model config
-# config = DotMap(json.load(open(parser.parse_args().config_path)))
-args, config = parse_args_and_config()
+config = DotMap(json.load(open(parser.parse_args().config)))
+
+config.tb_logger = tb.SummaryWriter(log_dir=tb_path)
+
+handler1 = logging.StreamHandler()
+handler2 = logging.FileHandler(os.path.join(args.log_path, 'stdout.txt'))
+formatter = logging.Formatter('%(levelname)s - %(filename)s - %(asctime)s - %(message)s')
+handler1.setFormatter(formatter)
+handler2.setFormatter(formatter)
+logger = logging.getLogger()
+logger.addHandler(handler1)
+logger.addHandler(handler2)
+
 
 # GPU
 os.environ["CUDA_DEVICE_ORDER"]    = "PCI_BUS_ID";
@@ -77,13 +123,13 @@ dataloader  = DataLoader(dataset, batch_size=config.training.batch_size,
                          shuffle=True, num_workers=config.training.num_workers, 
                          drop_last=True)
 
-pairwise_dist_path = './parameters/' + config.data.file + '.txt'
-if not os.path.exists(pairwise_dist_path):
-    pairwise_dist(config, dataset, tqdm)
+# pairwise_dist_path = './parameters/' + config.data.file + '.txt'
+# if not os.path.exists(pairwise_dist_path):
+#     pairwise_dist(config, dataset, tqdm)
 
 config.data.image_size = [next(iter(dataloader))[config.training.X_train].shape[2], next(iter(dataloader))[config.training.X_train].shape[3]]
 print('Image Dimension: ' + str(config.data.image_size) + '\n')
-config.model.sigma_begin = 90 #np.loadtxt(pairwise_dist_path)
+config.model.sigma_begin = 232 #np.loadtxt(pairwise_dist_path)
 
 if isinstance(config.model.sigma_rate, str):
     config.model.sigma_rate = globals()[config.model.sigma_rate](dataset, config)

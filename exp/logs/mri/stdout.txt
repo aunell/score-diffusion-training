@@ -1,1 +1,0 @@
-INFO - parse.py - 2023-04-21 19:09:32,569 - Using device: cuda

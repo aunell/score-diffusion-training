@@ -56,7 +56,7 @@ class MCFullFastMRI(Dataset):
             # Get k-space for specific slice
             ksp = np.asarray(contents['kspace'][slice_idx])
             ksp=ksp.reshape((2,ksp.shape[0]//2, ksp.shape[1])) # shape = [C,H,W]
-            print('KSP shape', ksp.shape) #640x368
+            # print('KSP shape', ksp.shape) #640x368
             
         map_file = self.maps_dir + os.path.basename(self.ksp_files[sample_idx])
         # with h5py.File(map_file, 'r') as contents:

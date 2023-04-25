@@ -15,6 +15,8 @@ def anneal_dsm_score_estimation(scorenet, config):
     target = - 1 / (used_sigmas ** 2) * noise
 
     # Actual output
+    labels=labels.float()
+    perturbed_samples=perturbed_samples.float()
     scores = scorenet(perturbed_samples, labels)
 
     noise_est = -(scores * (used_sigmas ** 2))
