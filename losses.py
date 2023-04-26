@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+import os
+import torchvision
 
 def anneal_dsm_score_estimation(scorenet, config):
     # This always enters during training
@@ -21,6 +23,17 @@ def anneal_dsm_score_estimation(scorenet, config):
 
     noise_est = -(scores * (used_sigmas ** 2))
     samples_est = perturbed_samples - noise_est
+    print('SAMPLES EST SIZE', samples_est[0, 0, :, :].size())
+    if True:
+        id_num=0
+        path= '/data/vision/polina/users/aunell/mri-langevin/score-diffusion-training/exp/logs/mriSampling/compare'
+        if not os.path.exists(path):
+            os.makedirs(path)
+        path=path+'/'
+        torchvision.utils.save_image(scores[0, 0, :, :], path+'{}_predNoise.jpg'.format(id_num), nrow=int(scores.shape[0] ** 0.5))
+        torchvision.utils.save_image(samples[0, 0, :, :], path+'{}_original.jpg'.format(id_num), nrow=int(samples.shape[0] ** 0.5))
+        torchvision.utils.save_image(perturbed_samples[0, 0, :, :], path+'{}_perturbed.jpg'.format(id_num), nrow=int(perturbed_samples.shape[0] ** 0.5))
+        torchvision.utils.save_image(samples_est[0, 0, :, :], path+'{}_denoised.jpg'.format(id_num), nrow=int(samples_est.shape[0] ** 0.5))
 
     samples_flatten = samples.view(samples.shape[0], -1)
     samples_est_flatten = samples_est.view(samples_est.shape[0], -1)

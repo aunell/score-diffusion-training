@@ -22,7 +22,7 @@
     
     "training":
     {
-        "batch_size": 4,
+        "batch_size": 2,
         "n_epochs": 600,
         "X_train": "X"
     },
