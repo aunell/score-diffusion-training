@@ -2,8 +2,10 @@ import torch
 import numpy as np
 import os
 import torchvision
+from visualize import *
 
-def anneal_dsm_score_estimation(scorenet, config):
+
+def anneal_dsm_score_estimation(scorenet, config, index=None):
     # This always enters during training
     samples = config.current_sample[config.training.X_train]
     labels = torch.randint(0, len(config.training.sigmas), (samples.shape[0],), device=samples.device)
@@ -23,18 +25,15 @@ def anneal_dsm_score_estimation(scorenet, config):
 
     noise_est = -(scores * (used_sigmas ** 2))
     samples_est = perturbed_samples - noise_est
-    print('SAMPLES EST SIZE', samples_est[0, 0, :, :].size())
     if True:
-        id_num=0
         path= '/data/vision/polina/users/aunell/mri-langevin/score-diffusion-training/exp/logs/mriSampling/compare'
         if not os.path.exists(path):
             os.makedirs(path)
         path=path+'/'
-        torchvision.utils.save_image(scores[0, 0, :, :], path+'{}_predNoise.jpg'.format(id_num), nrow=int(scores.shape[0] ** 0.5))
-        torchvision.utils.save_image(samples[0, 0, :, :], path+'{}_original.jpg'.format(id_num), nrow=int(samples.shape[0] ** 0.5))
-        torchvision.utils.save_image(perturbed_samples[0, 0, :, :], path+'{}_perturbed.jpg'.format(id_num), nrow=int(perturbed_samples.shape[0] ** 0.5))
-        torchvision.utils.save_image(samples_est[0, 0, :, :], path+'{}_denoised.jpg'.format(id_num), nrow=int(samples_est.shape[0] ** 0.5))
-
+        visualizeTensor(scores[0,0,:,:], path, 'predNoise'+str(index)+'.png')
+        visualizeTensor(samples[0,0,:,:], path, 'original'+str(index)+'.png')
+        visualizeTensor(perturbed_samples[0,0,:,:], path, 'perturbed'+str(index)+'.png')
+        visualizeTensor(samples_est[0,0,:,:], path, 'denoised'+str(index)+'.png')
     samples_flatten = samples.view(samples.shape[0], -1)
     samples_est_flatten = samples_est.view(samples_est.shape[0], -1)
 

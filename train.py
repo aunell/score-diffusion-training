@@ -187,13 +187,16 @@ for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
         # Safety check
         diffuser.train()
         step += 1
+
+        if step>2:
+            break
         
         # Move data to device
         for key in config.current_sample:
             config.current_sample[key] = config.current_sample[key].cuda()
 
         # Get loss on Hermitian channels
-        loss, nrmse, nrmse_img, metric_1, metric_2 = globals()[config.model.loss](diffuser, config)
+        loss, nrmse, nrmse_img, metric_1, metric_2 = globals()[config.model.loss](diffuser, config, config.epoch)
         
         # Keep a running loss
         if step == 1:
@@ -228,17 +231,18 @@ for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
             print('Epoch %d, Step %d, Loss (EMA) %.3f, NRMSE (Noise) %.3f, NRMSE (Image) %.3f, M1 %.3f, M2 %.3f' % 
                 (config.epoch, step, running_loss, running_nrmse, running_nrmse_img, running_metric_1, running_metric_2))
     
-    if (config.epoch+1) % 50 == 0:
+    if (config.epoch+1) % 1 == 0:
         # Save snapshot
-        torch.save({'diffuser': diffuser,
-                    'model_state': diffuser.state_dict(),
-                    'config': config,
-                    'loss': train_loss,
-                    'nrmse_noise': train_nrmse,
-                    'nrmse_img': train_nrmse_img,
-                    'metric_1': train_metric_1,
-                    'metric_2': train_metric_2}, 
-        os.path.join(config.log_path, 'epoch' + str(config.epoch+1) + '_final_model.pt'))
+        # torch.save({'diffuser': diffuser,
+        #             'model_state': diffuser.state_dict(),
+        #             'config': config,
+        #             'loss': train_loss,
+        #             'nrmse_noise': train_nrmse,
+        #             'nrmse_img': train_nrmse_img,
+        #             'metric_1': train_metric_1,
+        #             'metric_2': train_metric_2}, 
+        # os.path.join(config.log_path, 'epoch' + str(config.epoch+1) + '_final_model.pt'))
+        continue
     
 # Save snapshot
 torch.save({'diffuser': diffuser,

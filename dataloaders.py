@@ -4,13 +4,7 @@ import numpy as np
 import sigpy as sp
 import torchvision
 from PIL import Image
-
-def normalize_0_to_1(image):
-    image_02perc = np.min(image)
-    image_98perc = np.max(image)
-    image_normalized = (image - image_02perc) / (image_98perc - image_02perc)
-    image_normalized=np.clip(image_normalized, 0, 1)
-    return image_normalized
+from visualize import *
 
 class MCFullFastMRI(Dataset):
     def __init__(self, config):
@@ -53,12 +47,7 @@ class MCFullFastMRI(Dataset):
                     os.makedirs(path)
                 except:
                     pass
-            a= contents['reconstruction_esc'][slice_idx]
-            a=normalize_0_to_1(a)
-            print('SIZE', a.shape)
-            img = Image.fromarray(a)
-            img = img.convert('L')
-            img.save(path+'gtImageRE.png')
+            visualizeArray(contents['reconstruction_esc'][slice_idx], path, 'imageFromDataloader_'+str(idx)+'.png')
             ksp=ksp.reshape((2,ksp.shape[0]//2, ksp.shape[1])) # shape = [C,H,W]
             # print('KSP shape', ksp.shape) #640x368
             
@@ -70,16 +59,13 @@ class MCFullFastMRI(Dataset):
          
         gt_img = self.adjoint_fs(ksp, s_maps) #shape [H,W]
 
-        path= '/data/vision/polina/users/aunell/mri-langevin/score-diffusion-training/exp/logs/mriSampling/dataloadSamples/'
-        if not os.path.exists(path):
-            try:
-                os.makedirs(path)
-            except:
-                pass
-        gt_img= normalize_0_to_1(gt_img)
-        img = Image.fromarray(np.imag(gt_img))
-        img = img.convert('L')
-        img.save(path+'gtImage.png')
+        # path= '/data/vision/polina/users/aunell/mri-langevin/score-diffusion-training/exp/logs/mriSamplingKSP/dataloadSamples/'
+        # if not os.path.exists(path):
+        #     try:
+        #         os.makedirs(path)
+        #     except:
+        #         pass
+        visualizeArray(np.absolute(gt_img), path, 'imageFromKspace_'+str(idx)+'.png')
 
         gt_img_cropped = sp.resize(gt_img, [384,384]) # shape [384,384]
         gt_maps_cropped = sp.resize(s_maps, [s_maps.shape[0],384,384]) # shape [C, 384, 384]​
