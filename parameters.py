@@ -7,7 +7,10 @@ def pairwise_dist(config, dataset, tqdm):
     # Construct pairwise distances
     # Set to true to follow [Song '20] exactly
     dist_matrix   = torch.zeros((len(dataset), len(dataset))).to('cuda')
-    flat_channels = torch.tensor(dataset.channels.reshape((len(dataset), -1))).to('cuda')
+    print('pairwise len dataset', len(dataset))
+    flat_channels = torch.tensor(dataset.reshape((len(dataset), -1))).to('cuda')
+    print('channel size', flat_channels.size)
+    # flat_channels = torch.tensor(dataset.channels.reshape((len(dataset), -1))).to('cuda')
 
     for idx in tqdm(range(len(dataset))):
         dist_matrix[idx] = torch.linalg.norm(flat_channels[idx][None, :] - flat_channels, dim=-1)

@@ -8,11 +8,15 @@ from visualize import *
 def anneal_dsm_score_estimation(scorenet, config, index=None):
     # This always enters during training
     samples = config.current_sample[config.training.X_train]
-    labels = torch.randint(0, len(config.training.sigmas), (samples.shape[0],), device=samples.device)
+    # labels = torch.randint(0, len(config.training.sigmas), (samples.shape[0],), device=samples.device)
+    labels = torch.randint(len(config.training.sigmas)-2, len(config.training.sigmas), (samples.shape[0],), device=samples.device)
 
     used_sigmas = config.training.sigmas[labels].view(samples.shape[0], * ([1] * len(samples.shape[1:])))
     noise       = torch.randn_like(samples) * used_sigmas
-
+    print('noise', noise)
+    # noise       = torch.full(.1, samples)
+    # print('sigmas', torch.max(used_sigmas))
+    # print('samples', torch.max(samples))
     perturbed_samples = samples + noise
 
     # Desired output
@@ -26,14 +30,14 @@ def anneal_dsm_score_estimation(scorenet, config, index=None):
     noise_est = -(scores * (used_sigmas ** 2))
     samples_est = perturbed_samples - noise_est
     if True:
-        path= '/data/vision/polina/users/aunell/mri-langevin/score-diffusion-training/exp/logs/mriSampling/compare'
+        path = config.output+'/compare'
         if not os.path.exists(path):
             os.makedirs(path)
         path=path+'/'
-        visualizeTensor(scores[0,0,:,:], path, 'predNoise'+str(index)+'.png')
-        visualizeTensor(samples[0,0,:,:], path, 'original'+str(index)+'.png')
-        visualizeTensor(perturbed_samples[0,0,:,:], path, 'perturbed'+str(index)+'.png')
-        visualizeTensor(samples_est[0,0,:,:], path, 'denoised'+str(index)+'.png')
+        visualizeTensor(scores[0,0,:,:], path, str(index)+'predNoise.png')
+        visualizeTensor(samples[0,0,:,:], path, str(index)+'original.png')
+        visualizeTensor(perturbed_samples[0,0,:,:], path, str(index)+'perturbed.png')
+        visualizeTensor(samples_est[0,0,:,:], path, str(index)+'denoised.png')
     samples_flatten = samples.view(samples.shape[0], -1)
     samples_est_flatten = samples_est.view(samples_est.shape[0], -1)
 

@@ -73,7 +73,7 @@ with open(os.path.join(args.log_path, 'config.json'), 'w') as f:
 config = DotMap(json.load(open(parser.parse_args().config)))
 
 config.tb_logger = tb.SummaryWriter(log_dir=tb_path)
-
+config.output=args.log_path
 handler1 = logging.StreamHandler()
 handler2 = logging.FileHandler(os.path.join(args.log_path, 'stdout.txt'))
 formatter = logging.Formatter('%(levelname)s - %(filename)s - %(asctime)s - %(message)s')
@@ -123,13 +123,17 @@ dataloader  = DataLoader(dataset, batch_size=config.training.batch_size,
                          shuffle=True, num_workers=config.training.num_workers, 
                          drop_last=True)
 
-# pairwise_dist_path = './parameters/' + config.data.file + '.txt'
-# if not os.path.exists(pairwise_dist_path):
-#     pairwise_dist(config, dataset, tqdm)
+pairwise_dist_path = './parameters/' + config.data.file + '.txt'
+if not os.path.exists(pairwise_dist_path):
+    dataset_matrix= np.zeros((len(dataset), 2, 384, 384))
+    for i, config.current_sample in tqdm(enumerate(dataloader)):
+        dataset_matrix[i:i+4]= config.current_sample['X'][0:4]
+        break
+    pairwise_dist(config, dataset_matrix, tqdm)
 
 config.data.image_size = [next(iter(dataloader))[config.training.X_train].shape[2], next(iter(dataloader))[config.training.X_train].shape[3]]
 print('Image Dimension: ' + str(config.data.image_size) + '\n')
-config.model.sigma_begin = 232 #np.loadtxt(pairwise_dist_path)
+config.model.sigma_begin = np.loadtxt(pairwise_dist_path)
 
 if isinstance(config.model.sigma_rate, str):
     config.model.sigma_rate = globals()[config.model.sigma_rate](dataset, config)
@@ -187,10 +191,6 @@ for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
         # Safety check
         diffuser.train()
         step += 1
-
-        if step>2:
-            break
-        
         # Move data to device
         for key in config.current_sample:
             config.current_sample[key] = config.current_sample[key].cuda()
@@ -230,27 +230,40 @@ for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
             # Print
             print('Epoch %d, Step %d, Loss (EMA) %.3f, NRMSE (Noise) %.3f, NRMSE (Image) %.3f, M1 %.3f, M2 %.3f' % 
                 (config.epoch, step, running_loss, running_nrmse, running_nrmse_img, running_metric_1, running_metric_2))
-    
-    if (config.epoch+1) % 1 == 0:
-        # Save snapshot
-        # torch.save({'diffuser': diffuser,
-        #             'model_state': diffuser.state_dict(),
-        #             'config': config,
-        #             'loss': train_loss,
-        #             'nrmse_noise': train_nrmse,
-        #             'nrmse_img': train_nrmse_img,
-        #             'metric_1': train_metric_1,
-        #             'metric_2': train_metric_2}, 
-        # os.path.join(config.log_path, 'epoch' + str(config.epoch+1) + '_final_model.pt'))
-        continue
+
+        if (config.epoch+1) % 50 == 0:
+            # Save snapshot
+            torch.save({'model_state': diffuser.state_dict()}, 
+            os.path.join(config.log_path, 'epoch' + str(config.epoch+1) + '_final_model.pt'))
+            continue    
+    # if (config.epoch+1) % 1 == 0:
+    #     Save snapshot
+    #     torch.save({'diffuser': diffuser,
+    #                 'model_state': diffuser.state_dict(),
+    #                 'config': config,
+    #                 'loss': train_loss,
+    #                 'nrmse_noise': train_nrmse,
+    #                 'nrmse_img': train_nrmse_img,
+    #                 'metric_1': train_metric_1,
+    #                 'metric_2': train_metric_2}, 
+    #     os.path.join(config.log_path, 'epoch' + str(config.epoch+1) + '_final_model.pt'))
+    #     continue
     
 # Save snapshot
-torch.save({'diffuser': diffuser,
-            'model_state': diffuser.state_dict(),
-            'config': config,
-            'loss': train_loss,
-            'nrmse_noise': train_nrmse,
-            'nrmse_img': train_nrmse_img,
-            'metric_1': train_metric_1,
-            'metric_2': train_metric_2}, 
-   os.path.join(config.log_path, 'final_model.pt'))
+# print({'diffuser': diffuser,
+#             'model_state': diffuser.state_dict(),
+#             'config': config,
+#             'loss': train_loss,
+#             'nrmse_noise': train_nrmse,
+#             'nrmse_img': train_nrmse_img,
+#             'metric_1': train_metric_1,
+#             'metric_2': train_metric_2})
+# torch.save({'diffuser': diffuser,
+#             'model_state': diffuser.state_dict(),
+#             'config': config,
+#             'loss': train_loss,
+#             'nrmse_noise': train_nrmse,
+#             'nrmse_img': train_nrmse_img,
+#             'metric_1': train_metric_1,
+#             'metric_2': train_metric_2}, 
+#    os.path.join(config.log_path, 'final_model.pt'))

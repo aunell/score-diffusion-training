@@ -3,7 +3,7 @@
     {
         "loss": "anneal_dsm_score_estimation",
         "depth": "large",
-        "gpu": 2,
+        "gpu": 2, 
         "ngf": 128,
         "num_classes": 2311,
         "sigma_rate": 0.99548
