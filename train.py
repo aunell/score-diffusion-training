@@ -83,7 +83,10 @@ logger = logging.getLogger()
 logger.addHandler(handler1)
 logger.addHandler(handler2)
 
-
+average_loss = []
+minimum_loss = []
+maximum_loss = []
+median_loss = []
 # GPU
 os.environ["CUDA_DEVICE_ORDER"]    = "PCI_BUS_ID";
 os.environ["CUDA_VISIBLE_DEVICES"] = str(config.model.gpu)
@@ -140,7 +143,7 @@ if isinstance(config.model.sigma_rate, str):
 
 if not config.model.sigma_end:
       config.model.sigma_end = config.model.sigma_begin * config.model.sigma_rate ** (config.model.num_classes - 1)
-print('line 93')
+
 # Get a model
 if config.model.depth == 'large':
     diffuser = NCSNv2Deepest(config).cuda()
@@ -184,7 +187,8 @@ if not os.path.exists(config.log_path):
 
 # Logged metrics
 print('\n')
-train_loss, train_nrmse, train_nrmse_img, train_metric_1, train_metric_2  = [], [], [], [], []
+# train_loss, train_nrmse, train_nrmse_img, train_metric_1, train_metric_2  = [], [], [], [], []
+train_loss, train_nrmse, train_nrmse_img, train_minSigma, train_maxSigma, train_medSigma  = [], [], [], [], [], []
 
 for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
     for i, config.current_sample in tqdm(enumerate(dataloader)):
@@ -196,28 +200,39 @@ for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
             config.current_sample[key] = config.current_sample[key].cuda()
 
         # Get loss on Hermitian channels
-        loss, nrmse, nrmse_img, metric_1, metric_2 = globals()[config.model.loss](diffuser, config, config.epoch)
-        
+        # loss, nrmse, nrmse_img, metric_1, metric_2 = globals()[config.model.loss](diffuser, config, config.epoch)
+
+        loss, nrmse, nrmse_img, minSigma, maxSigma, medSigma = globals()[config.model.loss](diffuser, config, config.epoch)
+
         # Keep a running loss
         if step == 1:
             running_loss = loss.item()
             running_nrmse = nrmse.item()
             running_nrmse_img = nrmse_img.item()
-            running_metric_1 = metric_1.item()
-            running_metric_2 = metric_2.item()
+            # running_metric_1 = metric_1.item()
+            # running_metric_2 = metric_2.item()
+            running_minSigma = minSigma.item()
+            running_maxSigma = maxSigma.item()
+            running_medSigma = medSigma.item()
         else:
             running_loss = 0.99 * running_loss + 0.01 * loss.item()
             running_nrmse = 0.99 * running_nrmse + 0.01 * nrmse.item()
             running_nrmse_img = 0.99 * running_nrmse_img + 0.01 * nrmse_img.item()
-            running_metric_1 = 0.99 * running_metric_1 + 0.01 * metric_1.item()
-            running_metric_2 = 0.99 * running_metric_2 + 0.01 * metric_2.item()
+            # running_metric_1 = 0.99 * running_metric_1 + 0.01 * metric_1.item()
+            # running_metric_2 = 0.99 * running_metric_2 + 0.01 * metric_2.item()
+            running_minSigma = 0.99 * running_minSigma + 0.01 * minSigma.item()
+            running_maxSigma = 0.99 * running_maxSigma + 0.01 * maxSigma.item()
+            running_medSigma = 0.99 * running_medSigma + 0.01 * medSigma.item()
     
         # Log
         train_loss.append(loss.item())
         train_nrmse.append(nrmse.item())
         train_nrmse_img.append(nrmse_img.item())
-        train_metric_1.append(metric_1.item())
-        train_metric_2.append(metric_2.item())
+        # train_metric_1.append(metric_1.item())
+        # train_metric_2.append(metric_2.item())
+        train_minSigma.append(minSigma.item())
+        train_maxSigma.append(maxSigma.item())
+        train_medSigma.append(medSigma.item())
         
         # Step and EMA update
         optimizer.zero_grad()
@@ -228,14 +243,28 @@ for config.epoch in tqdm(range(start_epoch, config.training.n_epochs)):
         # Verbose
         if step % config.training.eval_freq == 0:
             # Print
-            print('Epoch %d, Step %d, Loss (EMA) %.3f, NRMSE (Noise) %.3f, NRMSE (Image) %.3f, M1 %.3f, M2 %.3f' % 
-                (config.epoch, step, running_loss, running_nrmse, running_nrmse_img, running_metric_1, running_metric_2))
+            # print('Epoch %d, Step %d, Loss (EMA) %.3f, NRMSE (Noise) %.3f, NRMSE (Image) %.3f, M1 %.3f, M2 %.3f' % 
+                # (config.epoch, step, running_loss, running_nrmse, running_nrmse_img, running_metric_1, running_metric_2))
+            print('Epoch %d, Step %d, Loss (EMA) %.3f, NRMSE (Noise) %.3f, NRMSE (Image) %.3f' % 
+            (config.epoch, step, running_loss, running_nrmse, running_nrmse_img))
 
         if (config.epoch+1) % 50 == 0:
             # Save snapshot
             torch.save({'model_state': diffuser.state_dict()}, 
             os.path.join(config.log_path, 'epoch' + str(config.epoch+1) + '_final_model.pt'))
-            continue    
+            continue   
+    # if (config.epoch+1) % 1 == 0:
+    average_loss.append(np.mean(train_loss))
+    minimum_loss.append(np.mean(train_minSigma))
+    maximum_loss.append(np.mean(train_maxSigma))
+    median_loss.append(np.mean(train_medSigma))
+    if not os.path.exists("./trainLoss/"):
+        os.makedirs("./trainLoss/")
+
+    np.savetxt('./trainLoss/' + str(config.epoch) + 'meanSigmas.txt', average_loss)
+    np.savetxt('./trainLoss/' + str(config.epoch) + 'minSigma.txt', minimum_loss)
+    np.savetxt('./trainLoss/' + str(config.epoch)+ 'maxSigma.txt', maximum_loss)
+    np.savetxt('./trainLoss/' + str(config.epoch)+ 'medSigma.txt', median_loss) 
     # if (config.epoch+1) % 1 == 0:
     #     Save snapshot
     #     torch.save({'diffuser': diffuser,

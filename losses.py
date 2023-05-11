@@ -8,15 +8,20 @@ from visualize import *
 def anneal_dsm_score_estimation(scorenet, config, index=None):
     # This always enters during training
     samples = config.current_sample[config.training.X_train]
-    # labels = torch.randint(0, len(config.training.sigmas), (samples.shape[0],), device=samples.device)
-    labels = torch.randint(len(config.training.sigmas)-2, len(config.training.sigmas), (samples.shape[0],), device=samples.device)
+    labels = torch.randint(0, len(config.training.sigmas), (samples.shape[0]-2,), device=samples.device)
+    labels =torch.cat((labels, torch.randint(0, len(config.training.sigmas)//10, size=(1,), device=samples.device)))
+    labels =torch.cat((labels, torch.randint(len(config.training.sigmas)//10, len(config.training.sigmas), size=(1,), device=samples.device)))
 
     used_sigmas = config.training.sigmas[labels].view(samples.shape[0], * ([1] * len(samples.shape[1:])))
+    # minSigma_i = torch.argmin(used_sigmas)
+    # maxSigma_i = torch.argmax(used_sigmas)
+    # med = sorted(used_sigmas)[len(used_sigmas)//2]
+    minSigma_i= -1
+    maxSigma_i =-2
+    medSigma_i = torch.max(torch.nonzero(used_sigmas== sorted(used_sigmas)[len(used_sigmas)//2]).flatten().flatten())
+    # print('median', medSigma_i)
+    # print('length', used_sigmas)
     noise       = torch.randn_like(samples) * used_sigmas
-    print('noise', noise)
-    # noise       = torch.full(.1, samples)
-    # print('sigmas', torch.max(used_sigmas))
-    # print('samples', torch.max(samples))
     perturbed_samples = samples + noise
 
     # Desired output
@@ -51,7 +56,7 @@ def anneal_dsm_score_estimation(scorenet, config, index=None):
     nrmse = (torch.norm((target - scores), dim=1) / torch.norm(target, dim=1))
     nrmse_img = (torch.norm((samples_flatten - samples_est_flatten), dim=1) / torch.norm(samples_flatten, dim=1))
 
-    return loss.mean(dim=0), nrmse.mean(dim=0), nrmse_img.mean(dim=0), torch.tensor(0), torch.tensor(0)
+    return loss.mean(dim=0), nrmse.mean(dim=0), nrmse_img.mean(dim=0), loss[minSigma_i], loss[maxSigma_i], loss[medSigma_i] #torch.tensor(0), torch.tensor(0)
 
 # No added noise SURE loss
 def vanilla_sure_loss(scorenet, config):
